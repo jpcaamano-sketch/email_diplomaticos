@@ -117,7 +117,7 @@ st.divider()
 
 # 1. INPUTS (Arriba)
 destinatario = st.selectbox("1. ¿A quién le escribes?", 
-    ["Cliente", "Jefe/Superior", "Par (Colega/Igual), "Colaborador/Equipo", "Proveedor""])
+    ["Cliente", "Jefe/Superior", "Par (Colega/Igual)", "Colaborador/Equipo", "Proveedor"])
 
 texto_input = st.text_area("2. Borrador del texto (sin filtro):", height=120, 
     placeholder="Ej: Necesito que me entregues eso ahora mismo o tendremos problemas...")
