@@ -5,7 +5,7 @@ from docx import Document
 import io
 
 # --- 1. CONFIGURACIÓN ---
-st.set_page_config(page_title="Traductor Diplomático", layout="centered") # Layout centered para lectura vertical
+st.set_page_config(page_title="Correo Diplomático", layout="centered") # Layout centered para lectura vertical
 
 # Estilos CSS para limpiar la interfaz
 st.markdown("""
@@ -111,13 +111,13 @@ def generar_archivo(resultados, original, formato):
         return pdf.output(dest='S').encode('latin-1'), "application/pdf", "pdf"
 
 # --- 4. INTERFAZ VISUAL (ORDEN NUEVO) ---
-st.title("🕊️ Traductor Diplomático")
-st.caption("Convierte borradores difíciles en comunicación efectiva.")
+st.title("🕊️ Correos Diplomático")
+st.caption("No te demores en responder. Escribe tu respuesta como quieras, con las palabras que quieras y emoción que quieras. Te ayudamos a crear la mejor respuesta políticamente correcta.")
 st.divider()
 
 # 1. INPUTS (Arriba)
 destinatario = st.selectbox("1. ¿A quién le escribes?", 
-    ["Cliente", "Jefe/Superior", "Colaborador/Equipo", "Proveedor", "Par (Colega/Igual)"])
+    ["Cliente", "Jefe/Superior", "Par (Colega/Igual), "Colaborador/Equipo", "Proveedor""])
 
 texto_input = st.text_area("2. Borrador del texto (sin filtro):", height=120, 
     placeholder="Ej: Necesito que me entregues eso ahora mismo o tendremos problemas...")
