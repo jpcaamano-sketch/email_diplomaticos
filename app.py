@@ -5,7 +5,7 @@ from docx import Document
 import io
 
 # --- 1. CONFIGURACIÓN ---
-st.set_page_config(page_title="Correo Diplomático", layout="centered") # Layout centered para lectura vertical
+st.set_page_config(page_title="Correos Diplomáticos", layout="centered") # Layout centered para lectura vertical
 
 # Estilos CSS para limpiar la interfaz
 st.markdown("""
