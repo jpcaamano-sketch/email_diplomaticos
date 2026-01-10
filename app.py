@@ -3,24 +3,21 @@ import google.generativeai as genai
 from fpdf import FPDF
 from docx import Document
 import io
+import re
 
 # --- 1. CONFIGURACIÓN ---
-st.set_page_config(page_title="Correos Diplomáticos", layout="centered") # Layout centered para lectura vertical
+st.set_page_config(page_title="Traductor Diplomático", layout="centered")
 
-# Estilos CSS para limpiar la interfaz
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .block-container {padding-top: 2rem;}
-    
-    /* Estilo para las tarjetas de resultados */
     .stAlert { margin-bottom: 1rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# Configurar API Key
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
@@ -28,35 +25,47 @@ except Exception:
     st.error("⚠️ Falta configurar la API Key en .streamlit/secrets.toml")
     st.stop()
 
-# --- 2. LÓGICA IA (Robusta con Separadores) ---
+# --- 2. LÓGICA IA (ROBUSTA CON REGEX) ---
 def generar_opciones(texto, destinatario):
     try:
-        model = genai.GenerativeModel("models/gemma-3-27b-it")
-        separador = "|||"
+        # Usamos el modelo rápido y estable
+        model = genai.GenerativeModel("gemini-1.5-flash")
         
         prompt = f"""
-        Actúa como experto en comunicación. Reescribe el mensaje para: "{destinatario}".
-        Genera 3 versiones. Sigue este formato ESTRICTAMENTE usando el separador "{separador}":
+        TAREA: Actúa como experto en comunicación corporativa.
+        OBJETIVO: Reescribir el siguiente texto borrador para un "{destinatario}".
         
-        Versión Profesional:
-        [Texto aquí]
-        {separador}
-        Versión Directa:
-        [Texto aquí]
-        {separador}
-        Versión Coloquial:
-        [Texto aquí]
+        TEXTO ORIGINAL: "{texto}"
+        
+        INSTRUCCIONES:
+        1. No preguntes nada. Si el texto es corto, interprétalo y mejóralo.
+        2. Genera 3 versiones obligatoriamente.
+        3. Usa EXACTAMENTE estos títulos para separar las versiones:
+        
+        SECCION_PROFESIONAL:
+        [Versión formal y educada aquí]
+        
+        SECCION_DIRECTA:
+        [Versión ejecutiva y al grano aquí]
+        
+        SECCION_COLOQUIAL:
+        [Versión cercana y amable aquí]
         """
         
         response = model.generate_content(prompt)
-        # Limpieza y corte
-        partes = response.text.replace("*", "").split(separador)
+        resultado = response.text
+        
+        # Búsqueda inteligente (Regex) para evitar errores si el modelo habla de más
+        prof = re.search(r"SECCION_PROFESIONAL:(.*?)(?=SECCION_DIRECTA:|$)", resultado, re.DOTALL | re.IGNORECASE)
+        directa = re.search(r"SECCION_DIRECTA:(.*?)(?=SECCION_COLOQUIAL:|$)", resultado, re.DOTALL | re.IGNORECASE)
+        coloquial = re.search(r"SECCION_COLOQUIAL:(.*?)(?=$)", resultado, re.DOTALL | re.IGNORECASE)
         
         return {
-            "profesional": partes[0].replace("Versión Profesional:", "").strip() if len(partes) > 0 else "Error",
-            "directo": partes[1].replace("Versión Directa:", "").strip() if len(partes) > 1 else "Error",
-            "coloquial": partes[2].replace("Versión Coloquial:", "").strip() if len(partes) > 2 else "Error"
+            "profesional": prof.group(1).strip() if prof else "No se pudo generar.",
+            "directo": directa.group(1).strip() if directa else "No se pudo generar.",
+            "coloquial": coloquial.group(1).strip() if coloquial else "No se pudo generar."
         }
+
     except Exception as e:
         return {"error": str(e)}
 
@@ -85,7 +94,6 @@ def generar_archivo(resultados, original, formato):
         pdf = FPDF()
         pdf.add_page()
         
-        # Función limpieza caracteres latinos
         def L(t): return t.encode('latin-1', 'replace').decode('latin-1') if t else ""
         
         pdf.set_font("Arial", 'B', 16)
@@ -110,17 +118,17 @@ def generar_archivo(resultados, original, formato):
             
         return pdf.output(dest='S').encode('latin-1'), "application/pdf", "pdf"
 
-# --- 4. INTERFAZ VISUAL (ORDEN NUEVO) ---
-st.title("🕊️ Correos Diplomático")
-st.caption("No te demores en responder. Escribe tu respuesta como quieras, con las palabras que quieras y emoción que quieras. Te ayudamos a crear la mejor respuesta políticamente correcta.")
+# --- 4. INTERFAZ VISUAL ---
+st.title("🕊️ Traductor Diplomático")
+st.caption("Convierte borradores difíciles en comunicación efectiva.")
 st.divider()
 
-# 1. INPUTS (Arriba)
+# 1. INPUTS
 destinatario = st.selectbox("1. ¿A quién le escribes?", 
-    ["Cliente", "Jefe/Superior", "Par (Colega/Igual)", "Colaborador/Equipo", "Proveedor"])
+    ["Cliente", "Jefe/Superior", "Colaborador/Equipo", "Proveedor", "Par (Colega/Igual)"])
 
 texto_input = st.text_area("2. Borrador del texto (sin filtro):", height=120, 
-    placeholder="Ej: Necesito que me entregues eso ahora mismo o tendremos problemas...")
+    placeholder="Ej: Necesito que me entregues eso ahora mismo...")
 
 # Estado de sesión
 if 'resultado_v3' not in st.session_state:
@@ -131,10 +139,10 @@ if st.button("✨ Generar Propuestas", type="primary", use_container_width=True)
     if not texto_input:
         st.warning("Escribe un borrador primero.")
     else:
-        with st.spinner("Analizando tono y reescribiendo..."):
+        with st.spinner("Redactando versiones..."):
             st.session_state.resultado_v3 = generar_opciones(texto_input, destinatario)
 
-# 2. RESULTADOS (Vertical: Prof -> Directo -> Coloquial)
+# 2. RESULTADOS
 if st.session_state.resultado_v3:
     res = st.session_state.resultado_v3
     
@@ -143,13 +151,14 @@ if st.session_state.resultado_v3:
     else:
         st.markdown("### 📢 Opciones Asertivas")
         
+        # Tarjetas visuales
         st.info(f"**👔 Profesional (Formal):**\n\n{res.get('profesional')}")
         st.warning(f"**⚡ Directo (Ejecutivo):**\n\n{res.get('directo')}")
         st.success(f"**☕ Coloquial (Cercano):**\n\n{res.get('coloquial')}")
         
         st.divider()
         
-        # 3. ZONA DE DESCARGA (Unificada)
+        # 3. ZONA DE DESCARGA
         st.subheader("📥 Descargar Archivo")
         
         col_name, col_type = st.columns([2, 1])
