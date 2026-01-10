@@ -29,7 +29,7 @@ except Exception:
 def generar_opciones(texto, destinatario):
     try:
         # Usamos el modelo rápido y estable
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemma-3-27b-it")
         
         prompt = f"""
         TAREA: Actúa como experto en comunicación corporativa.
