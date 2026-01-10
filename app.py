@@ -31,7 +31,7 @@ except Exception:
 # --- 2. LÓGICA IA (Robusta con Separadores) ---
 def generar_opciones(texto, destinatario):
     try:
-        model = genai.GenerativeModel("models/gemma-3-1b-it")
+        model = genai.GenerativeModel("models/gemma-3-27b-it")
         separador = "|||"
         
         prompt = f"""
